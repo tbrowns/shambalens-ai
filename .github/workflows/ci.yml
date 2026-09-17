@@ -52,6 +52,17 @@ jobs:
     defaults:
       run:
         working-directory: frontend
+    # The Firebase web config is a public client identifier, not a secret — access is
+    # enforced by Auth, Storage rules and App Check. CI only needs syntactically valid
+    # placeholders so `lib/firebase.ts` can initialize at import time; without an apiKey
+    # getAuth() throws auth/invalid-api-key and every test that imports it fails to load.
+    env:
+      NEXT_PUBLIC_FIREBASE_API_KEY: ci-placeholder-api-key
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: shambalens-ci.firebaseapp.com
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: shambalens-ci
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: shambalens-ci.appspot.com
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "0000000000"
+      NEXT_PUBLIC_FIREBASE_APP_ID: "1:0000000000:web:0000000000000000000000"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
