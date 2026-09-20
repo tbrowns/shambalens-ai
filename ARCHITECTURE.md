@@ -63,7 +63,7 @@ Only the backend can read sanitized assessment objects, reach Neon, and call Gro
 | Triage orchestrator | Enforces stage order, short-circuits retakes, validates every model result, records timings | Demo fixtures are selected explicitly and never used as a live fallback |
 | AI provider interface | Vision observation, initial reasoning, answer revision, and independent verification | Applies timeouts, maps provider errors, and performs at most one JSON repair attempt |
 | Evidence retrieval | Ranks local entries by crop, observations, and context and returns citations | Small, reviewable corpus; no claim of exhaustiveness |
-| Safety policy | Detects or removes dosage, mixture, restricted-product, or disproportionate instructions | Always runs after model verification |
+| Safety policy | Removes product-class, active-ingredient, trade-name, Swahili-term, dose, dilution, concentration, formulation-code, and mixing instructions from action sections using a reviewable lexicon | Always runs after model verification; its own replacement text is tested to be clean so a pass is idempotent |
 | SQLAlchemy repository | Assessment lifecycle, model/timing metadata, anonymous ownership filtering, dashboard queries | Uses pooled Neon connections for application traffic |
 | Alembic | Versioned schema migration | Uses the direct Neon connection where configured |
 | Private Firebase Storage | Temporary UID-scoped originals and backend-only sanitized objects | Rules deny public reads; Neon stores object paths rather than permanent download URLs |
@@ -179,7 +179,23 @@ The verifier is a distinct GPT-OSS request with a verifier-specific system instr
 - prohibited chemical guidance is absent;
 - farmer-facing language matches the requested English or Swahili mode.
 
-The verifier can accept, lower confidence, add uncertainty/escalation, or return a corrected candidate. The application stores the verifier outcome separately from the final assessment. A conservative deterministic policy scans every action section and expert-guidance text, then removes prohibited chemical, mixture, or dosage instructions and inserts safe professional-escalation guidance where needed. A `verified` badge therefore represents an executed stage, not a decorative label.
+The verifier can accept, lower confidence, add uncertainty/escalation, or return a corrected candidate. The application stores the verifier outcome separately from the final assessment. A conservative deterministic policy then scans every action section and the expert-guidance text, removes any item that violates the chemical-advice rules, and inserts safe professional-escalation guidance where needed. A `verified` badge therefore represents an executed stage, not a decorative label.
+
+The policy is deliberately lexical rather than model-based so that it is reproducible and reviewable. `app/services/safety.py` compiles nine rule families from `app/knowledge/prohibited_terms.json`:
+
+| Rule | Catches | Example |
+| --- | --- | --- |
+| `chemical_class` | Product classes, with plurals | `apply pesticides weekly`, `wettable powder` |
+| `active_ingredient` | Named actives common in East African horticulture | `mancozeb`, `lambda-cyhalothrin`, `2,4-D`, `streptomycin` |
+| `trade_name` | Unambiguous regional product names | `Ridomil`, `Duduthrin`, `Karate` |
+| `swahili_term` | Pesticide vocabulary and morphology | `dawa ya wadudu`, `viuatilifu`, `nyunyizia dawa` |
+| `dosage` | Rate statements in either word order, with an optional substance | `50 g of the product per 20 litres`, `20 ml in a 20-litre knapsack`, `gramu 50 kwa lita 20` |
+| `dilution_ratio` | Ratio and parts instructions | `dilute 1:100`, `one part to ten parts water` |
+| `concentration` | Percentage solutions, with up to three words between the figure and its noun | `0.5% solution`, `2% copper solution`, `mchanganyiko wa asilimia 2` |
+| `formulation_code` | Uppercase label codes after a number | `5 EC`, `200 SL`, `80 WP` |
+| `mixture` | Mixing verbs followed by a chemical or product noun within one clause | `mix a chemical product` |
+
+Terms are matched on word boundaries, case-insensitively (formulation codes excepted), with an optional English plural and flexible spacing or hyphenation. The lexicon is data, not code, so agronomists can review it. `tests/test_safety_lexicon.py` enforces the invariants that keep it safe to extend: every term is lowercase, unambiguous, and individually detected; a corpus of prohibited instructions is removed from every guarded slot in both languages; low-risk advice, the knowledge base, the demo fixture plans, and the guardrail's own replacement text are never flagged; and applying the guardrail twice yields the same result as applying it once. A seeded generator also composes several hundred dose statements from the lexicon's units, separators, and denominators and asserts each is caught. Times (`6:30`), counts (`3 plants per row`), and percentages of plants affected are in the permitted corpus so they cannot regress into false positives.
 
 ## Structured output rules
 
@@ -294,6 +310,7 @@ Additional production controls belong at the deployment edge: HTTPS, rate limiti
 
 - Add a crop by adding reviewed knowledge entries, crop/schema values, translations, demo/test cases, and retrieval evaluation—not by changing provider transport.
 - Add a model provider by implementing the four capability methods and provider error mapping.
+- Extend the chemical guardrail by adding terms to `app/knowledge/prohibited_terms.json` and a matching phrase to the prohibited corpus in `tests/test_safety_lexicon.py`; the lexicon tests reject terms that would flag the knowledge base or the guardrail's replacement text.
 - Add another object-storage provider by implementing the storage adapter while preserving generated identifiers, server-side normalization, and protected retrieval.
 - Add authenticated organizations above the existing ownership-aware repository rather than exposing raw assessment queries.
 - Improve outbreak intelligence only with opt-in governance, minimum bucket sizes, and human confirmation.

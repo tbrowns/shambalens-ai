@@ -63,7 +63,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for trust boundaries and the complete dat
 ├── frontend/              # Next.js, TypeScript, Tailwind, UI and browser tests
 ├── backend/               # FastAPI, Pydantic, SQLAlchemy, Alembic and tests
 │   ├── app/agents/        # Provider-independent pipeline stages
-│   ├── app/knowledge/     # Maintainable crop evidence files
+│   ├── app/knowledge/     # Maintainable crop evidence and the prohibited-terms lexicon
 │   └── data/uploads/      # Runtime-only files; ignored by Git
 ├── scripts/               # Verification and benchmark entry points
 ├── docker-compose.yml
@@ -263,6 +263,7 @@ Local assessment creation uses multipart form data. Firebase assessment creation
 
 - Reports use confidence bands and evidence lists; they do not claim definitive diagnosis.
 - Chemical dosages, mixtures, and restricted-product instructions are prohibited. When chemical control may be appropriate, the report directs the farmer to a qualified local professional, the product label, and local regulations.
+- The deterministic guardrail that enforces this is driven by a reviewable lexicon, [`backend/app/knowledge/prohibited_terms.json`](backend/app/knowledge/prohibited_terms.json): product classes, about a hundred active ingredients, common East African trade names, and Swahili terms, plus grammar for doses in either word order (`50 g per 20 litres`, `gramu 50 kwa lita 20`), dilution ratios (`1:100`, `one part to ten parts`), percentage concentrations, formulation codes such as `5 EC`, and mixing instructions. Tests assert that a corpus of prohibited instructions is removed from every action section, that low-risk advice, the knowledge base, the demo plans, and the guardrail's own replacement text are never flagged, and that a second pass changes nothing.
 - Low-risk integrated pest-management steps are prioritized, with explicit **Do today**, **Monitor**, **Avoid**, and **Escalate when** sections.
 - Exact location, names, ownership tokens, and images are excluded from community analytics. Dashboard results are labelled **Community-reported AI signals, not confirmed outbreak data**.
 - Original filenames and client URLs are not trusted. Firebase object paths are UID-scoped and validated, images are decoded and normalized by the backend, and sanitized objects are retrieved only through an ownership-checked API route.
@@ -296,7 +297,11 @@ npm run build
 docker compose config --quiet
 ```
 
-The repository also provides `scripts/verify.ps1` for PowerShell and `scripts/verify.sh` for POSIX shells. Tests mock Groq calls; they do not consume API credits. The Playwright flow intercepts API calls with deterministic contract fixtures and runs against the built standalone frontend:
+The repository also provides `scripts/verify.ps1` for PowerShell and `scripts/verify.sh` for POSIX shells. Tests mock Groq calls; they do not consume API credits.
+
+To extend the chemical guardrail, add the term to the matching list in `backend/app/knowledge/prohibited_terms.json` and a phrase that uses it to `PROHIBITED_INSTRUCTIONS` in `backend/tests/test_safety_lexicon.py`; if new low-risk wording must survive, add it to `PERMITTED_GUIDANCE`. The lexicon tests also check that every term is lowercase, unambiguous, and individually detected, and that no term flags the knowledge base or the guardrail's replacement text.
+
+The Playwright flow intercepts API calls with deterministic contract fixtures and runs against the built standalone frontend:
 
 ```bash
 cd frontend
