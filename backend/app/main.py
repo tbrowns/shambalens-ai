@@ -62,7 +62,11 @@ logger = logging.getLogger("shambalens")
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
-    settings.upload_dir.mkdir(parents=True, exist_ok=True)
+    # Only the local adapter touches the disk. Serverless hosts such as Vercel
+    # mount the app read-only, so creating the directory there regardless
+    # crashed every cold start even though Firebase storage never uses it.
+    if settings.image_storage == "local":
+        settings.upload_dir.mkdir(parents=True, exist_ok=True)
     # Alembic owns PostgreSQL migrations; this keeps the SQLite developer default runnable.
     if settings.async_database_url.startswith("sqlite"):
         async with engine.begin() as connection:
