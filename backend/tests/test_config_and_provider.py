@@ -5,7 +5,7 @@ import pytest
 
 from app.agents.groq import GroqProvider
 from app.core.config import Settings
-from app.core.errors import ModelTimeoutError
+from app.core.errors import ModelResponseError, ModelTimeoutError
 from app.schemas.assessments import ImageObservation
 
 
@@ -110,7 +110,7 @@ async def test_json_object_request_tells_the_model_the_field_names(
         return {"choices": [{"message": {"content": "{}"}}]}
 
     monkeypatch.setattr(provider, "_post", fake_post)
-    with pytest.raises(Exception):
+    with pytest.raises(ModelResponseError):
         await provider._validated_request(
             model="vision-test",
             messages=[{"role": "user", "content": "inspect"}],
