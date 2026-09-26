@@ -93,8 +93,11 @@ class FollowUpQuestion(StrictModel):
         input_type = info.data.get("input_type")
         if input_type == "multiple_choice" and len(value) < 2:
             raise ValueError("multiple_choice questions need at least two options")
-        if input_type in {"yes_no", "short_text"} and value:
-            raise ValueError(f"{input_type} questions must not define options")
+        if input_type in {"yes_no", "short_text"}:
+            # The UI draws these controls itself. Models routinely add
+            # ["Yes", "No"] anyway; that is redundant, not wrong, so it is
+            # dropped rather than failing the whole assessment over it.
+            return []
         return value
 
 

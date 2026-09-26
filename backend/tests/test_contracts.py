@@ -140,3 +140,20 @@ def test_verification_state_must_be_consistent() -> None:
             confidence_adjustment=0,
             chemical_advice_removed=False,
         )
+
+
+@pytest.mark.parametrize("input_type", ["yes_no", "short_text"])
+def test_redundant_options_on_free_controls_are_dropped(input_type: str) -> None:
+    """gpt-oss-120b adds ["Yes", "No"] to yes/no questions. Rejecting that
+    failed every live analysis; the UI never reads options for these types."""
+    question = FollowUpQuestion.model_validate(
+        {
+            "id": "wet",
+            "text": "Is it wet?",
+            "input_type": input_type,
+            "options": ["Yes", "No"],
+            "explanation": "Separates stress from infection.",
+            "distinguishes": ["Stress"],
+        }
+    )
+    assert question.options == []
