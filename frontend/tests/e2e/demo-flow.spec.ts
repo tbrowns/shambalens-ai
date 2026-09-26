@@ -82,7 +82,7 @@ test("demo assessment reaches a visibly simulated verified report", async ({ pag
 });
 
 test("landing and safety routes render", async ({ page }) => {
-  await page.route("**/api/v1/system/runtime", (route) => route.fulfill({ json: { ai_provider: "groq", execution_mode: "live", vision_model: "qwen/qwen3.6-27b", reasoning_model: "openai/gpt-oss-120b", verifier_model: "openai/gpt-oss-120b", last_stage_latencies_ms: {}, database: "postgresql", image_storage: "local" }, headers: { "access-control-allow-origin": "*" } }));
+  await page.route("**/api/v1/system/runtime", (route) => route.fulfill({ json: { ai_provider: "groq", execution_mode: "live", vision_model: "qwen/qwen3.8-27b", reasoning_model: "openai/gpt-oss-120b", verifier_model: "openai/gpt-oss-120b", last_stage_latencies_ms: {}, database: "postgresql", image_storage: "local" }, headers: { "access-control-allow-origin": "*" } }));
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /See what your crop is telling you/ })).toBeVisible();
   await page.goto("/about");

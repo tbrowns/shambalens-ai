@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     database_url_unpooled: str | None = None
     groq_api_key: str | None = None
     groq_base_url: str = "https://api.groq.com/openai/v1"
-    groq_vision_model: str = "qwen/qwen3.6-27b"
+    groq_vision_model: str = "qwen/qwen3.8-27b"
     groq_reasoning_model: str = "openai/gpt-oss-120b"
     groq_verifier_model: str = "openai/gpt-oss-120b"
     ai_provider: str = "groq"

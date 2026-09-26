@@ -70,7 +70,7 @@ This is not a generic chatbot wrapped around an upload. Each stage has a strict 
 
 ### AI pipeline
 
-- `qwen/qwen3.6-27b` receives normalized images and returns observable plant/image evidence.
+- `qwen/qwen3.8-27b` receives normalized images and returns observable plant/image evidence.
 - `openai/gpt-oss-120b` receives text observations, farmer context, and retrieved evidence for the initial differential and targeted questions.
 - The same text model runs a new revision after answers and a separate verifier call with a different responsibility and output contract.
 - GPT-OSS is never represented as seeing the images.

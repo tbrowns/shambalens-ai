@@ -118,7 +118,7 @@ The pooled URL serves normal application traffic. The direct URL is used by Alem
 ### 2. Create the Groq key
 
 1. Create or select a project in the [Groq Console](https://console.groq.com).
-2. Confirm that the project can use `qwen/qwen3.6-27b` and `openai/gpt-oss-120b`. Model availability can vary by account and preview status.
+2. Confirm that the project can use `qwen/qwen3.8-27b` and `openai/gpt-oss-120b`. Model availability can vary by account and preview status.
 3. Open [API Keys](https://console.groq.com/keys), create a key named `shambalens-local`, and copy it when shown.
 4. Put the value only in the root `.env` as `GROQ_API_KEY`. One project key covers the configured models.
 
@@ -132,7 +132,7 @@ DATABASE_URL_UNPOOLED="postgresql://USER:PASSWORD@DIRECT-HOST/DATABASE?sslmode=r
 
 GROQ_API_KEY="gsk_..."
 GROQ_BASE_URL="https://api.groq.com/openai/v1"
-GROQ_VISION_MODEL="qwen/qwen3.6-27b"
+GROQ_VISION_MODEL="qwen/qwen3.8-27b"
 GROQ_REASONING_MODEL="openai/gpt-oss-120b"
 GROQ_VERIFIER_MODEL="openai/gpt-oss-120b"
 
