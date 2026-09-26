@@ -150,7 +150,21 @@ class GroqProvider(AIProvider):
                 },
             }
         else:
+            # JSON mode only guarantees syntax, not shape. Without the schema in
+            # the prompt the model invents its own field names, and whether they
+            # happen to match changes from one model version to the next.
             response_format = {"type": "json_object"}
+            messages = [
+                *messages,
+                {
+                    "role": "system",
+                    "content": (
+                        "Return one JSON object that matches this JSON Schema exactly, "
+                        "using these field names and no others:\n"
+                        + _json_text(schema.model_json_schema())
+                    ),
+                },
+            ]
 
         attempts = self.settings.model_max_retries + 1
         working_messages = list(messages)

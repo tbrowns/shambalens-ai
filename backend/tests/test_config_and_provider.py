@@ -93,3 +93,30 @@ async def test_json_object_response_is_repaired_once(monkeypatch: pytest.MonkeyP
     )
     assert result.crop_guess == "tomato"
     assert not responses
+
+
+@pytest.mark.asyncio
+async def test_json_object_request_tells_the_model_the_field_names(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """JSON mode only guarantees valid JSON. Without the schema in the prompt,
+    qwen3.8 answered with its own keys (status, observations, instructions)
+    and every analysis failed validation."""
+    provider = GroqProvider(Settings(groq_api_key="gsk_test", demo_mode=False))
+    sent: list[dict[str, object]] = []
+
+    async def fake_post(body: dict[str, object]) -> dict[str, object]:
+        sent.append(body)
+        return {"choices": [{"message": {"content": "{}"}}]}
+
+    monkeypatch.setattr(provider, "_post", fake_post)
+    with pytest.raises(Exception):
+        await provider._validated_request(
+            model="vision-test",
+            messages=[{"role": "user", "content": "inspect"}],
+            schema=ImageObservation,
+            strict=False,
+        )
+    prompt = "\n".join(str(m["content"]) for m in sent[0]["messages"])  # type: ignore[index, union-attr]
+    for field in ImageObservation.model_fields:
+        assert field in prompt
